@@ -9,7 +9,6 @@ import {
   resetPrize
 } from "./prizeList";
 import { NUMBER_MATRIX } from "./config.js";
-
 const ROTATE_TIME = 3000;
 const BASE_HEIGHT = 1080;
 
@@ -62,10 +61,28 @@ function initAll() {
   window.AJAX({
     url: "/getTempData",
     success(data) {
-      // 获取基础数据
+      // console.log('data:',data)
+      
+      // EACH_COUNT =  [1, 1, 5, 6, 7, 8, 9, 10]
+      // prizes =  [
+      //   {type: 0, count: 1000, title: "", text: "特别奖"},
+      //   {type: 1, count: 2, text: "特等奖", title: "神秘大礼", img: "../img/secrit.jpg"},
+      //   {type: 2, count: 5, text: "一等奖", title: "Mac Pro", img: "../img/mbp.jpg"},
+      //   {type: 3, count: 6, text: "二等奖", title: "华为 Mate30", img: "../img/huawei.png"},
+      //   {type: 4, count: 7, text: "三等奖", title: "Ipad Mini5", img: "../img/ipad.jpg"},
+      //   {type: 5, count: 8, text: "四等奖", title: "大疆无人机", img: "../img/spark.jpg"},
+      //   {type: 6, count: 10, text: "五等奖", title: "Kindle", img: "../img/kindle.jpg"},
+      //   {type: 7, count: 11, text: "六等奖", title: "漫步者蓝牙耳机", img: "../img/edifier.jpg"},
+      // ]
+
+      // COMPANY = data.cfgData.COMPANY;
+
+      // // 获取基础数据
       prizes = data.cfgData.prizes;
       EACH_COUNT = data.cfgData.EACH_COUNT;
       COMPANY = data.cfgData.COMPANY;
+      
+
       HIGHLIGHT_CELL = createHighlight();
       basicData.prizes = prizes;
       setPrizes(prizes);
@@ -104,7 +121,7 @@ function initAll() {
       initCards();
       // startMaoPao();
       animate();
-      shineCard();
+      shineCard(); //  自动切换
     }
   });
 }
@@ -132,7 +149,6 @@ function initCards() {
   camera.position.z = 3000;
 
   scene = new THREE.Scene();
-
   for (let i = 0; i < ROW_COUNT; i++) {
     for (let j = 0; j < COLUMN_COUNT; j++) {
       isBold = HIGHLIGHT_CELL.includes(j + "-" + i);
@@ -289,7 +305,6 @@ function bindEvent() {
         break;
     }
   });
-
   window.addEventListener("resize", onWindowResize, false);
 }
 
@@ -317,6 +332,13 @@ function createElement(css, text) {
   dom.innerHTML = text || "";
   return dom;
 }
+function createImageBitmap(src){
+  let dom = document.createElement("img");
+  dom.className = "head_img";
+  dom.style.width = "100%"
+  dom.src = src || "";
+  return dom;
+}
 
 /**
  * 创建名牌
@@ -335,12 +357,20 @@ function createCard(user, isBold, id, showTable) {
     element.style.backgroundColor =
       "rgba(0,127,127," + (Math.random() * 0.7 + 0.25) + ")";
   }
+
+  
+  // let num = 1 + +Math.floor(Math.random()*14);
+  // let src = `../img/${num}.jpg`
+  // element.appendChild(createImageBitmap(src));
+  // element.appendChild(createElement("details", user[2]));
+
   //添加公司标识
   element.appendChild(createElement("company", COMPANY));
 
   element.appendChild(createElement("name", user[1]));
 
   element.appendChild(createElement("details", user[0] + "<br/>" + user[2]));
+  
   return element;
 }
 
@@ -591,16 +621,25 @@ function lottery() {
     // 将之前的记录置空
     currentLuckys = [];
     selectedCardIndex = [];
+    let data = basicData.luckyUsers[currentPrize.type];
+    console.log('data:',data)
+    let l = data?data.length:0; //  已获奖人数
+    let nums = basicData.prizes[currentPrizeIndex].count;  //  奖品个数
+
     // 当前同时抽取的数目,当前奖品抽完还可以继续抽，但是不记录数据
-    let perCount = EACH_COUNT[currentPrizeIndex],
-      leftCount = basicData.leftUsers.length;
+    // let perCount = EACH_COUNT[currentPrizeIndex], //  每一次抽奖的人数
+    //   leftCount = basicData.leftUsers.length; //  剩余用户人数
+
+    let perCount = l+EACH_COUNT[currentPrizeIndex]>nums?(nums-l):EACH_COUNT[currentPrizeIndex], //  每一次抽奖的人数
+      leftCount = basicData.leftUsers.length; //  剩余用户人数
+      
+    console.log('测试1：',perCount,l,basicData,nums)
 
     if (leftCount === 0) {
       addQipao("人员已抽完，现在重新设置所有人员可以进行二次抽奖！");
       basicData.leftUsers = basicData.users;
       leftCount = basicData.leftUsers.length;
     }
-
     for (let i = 0; i < perCount; i++) {
       let luckyId = random(leftCount);
       currentLuckys.push(basicData.leftUsers.splice(luckyId, 1)[0]);
@@ -650,8 +689,8 @@ function saveData() {
 }
 
 function changePrize() {
-  let luckys = basicData.luckyUsers[currentPrize.type];
-  let luckyCount = (luckys ? luckys.length : 0) + EACH_COUNT[currentPrizeIndex];
+  let luckys = basicData.luckyUsers[currentPrize.type]; //  中奖名单
+  let luckyCount = (luckys ? luckys.length : 0) + EACH_COUNT[currentPrizeIndex];  //  中奖人数
   // 修改左侧prize的数目和百分比
   setPrizeData(currentPrizeIndex, luckyCount);
 }
@@ -673,6 +712,12 @@ function changeCard(cardIndex, user) {
   card.innerHTML = `<div class="company">${COMPANY}</div><div class="name">${
     user[1]
   }</div><div class="details">${user[0]}<br/>${user[2] || "PSST"}</div>`;
+
+  
+  // let num = 1 + +Math.floor(Math.random()*14);
+  // let src = `../img/${num}.jpg`
+  
+  // card.innerHTML = `<img class="head_img" src="${src}" style="width:100%"></img><div class="details">${user[2] || "PSST"}</div>`;
 }
 
 /**

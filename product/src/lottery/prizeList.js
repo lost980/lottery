@@ -253,9 +253,11 @@ let setPrizeData = (function() {
     }
 
     count = totalCount - count;
-    let percent = (count / totalCount).toFixed(2);
+    let percent = count<0?0:(count / totalCount).toFixed(2);
     elements.bar && (elements.bar.style.width = percent * 100 + "%");
-    elements.text && (elements.text.textContent = count + "/" + totalCount);
+    // let percent = (count / totalCount).toFixed(2);
+    // elements.text && (elements.text.textContent = count + "/" + totalCount);
+    elements.text && (elements.text.textContent = count>0?count:0 + "/" + totalCount);
     prizeElement.prizeLeft.textContent = count;
   };
 })();
